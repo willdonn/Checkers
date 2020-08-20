@@ -5,7 +5,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.util.ArrayList;
 import java.util.List;
 
 import checkers.CheckersView;
@@ -16,10 +15,16 @@ public class CheckersBoardController implements MouseListener, ActionListener {
 	private BoardModel model;
 	private CheckersBoardPane view;
 	private CheckersView parent;
+	private CheckersAI opponent;
 	
 	public CheckersBoardController(CheckersBoardPane view, int players, CheckersView parent) {
 		this.model = view.getModel();
 		model.setPlayers(players);
+		if (players == 1) {
+			opponent = new CheckersAI(model);
+			Thread t = new Thread(opponent);
+			t.start();
+		}
 		this.parent = parent;
 		this.view = view;
 		mapActions();
@@ -36,39 +41,12 @@ public class CheckersBoardController implements MouseListener, ActionListener {
 		}
 	}
 	
+	/* Game transaction handlers */
 	private void handlePieceSelected(CheckersCell cell) {
 		
 		view.getMoveButton().setEnabled(false);
-		CheckersPiece focusPiece = model.getFocusPiece();
 		
-		if (focusPiece == null) return;
-		
-		int x = focusPiece.x;
-		int y = focusPiece.y;
-		if (x - 1 >= 0 && model.isValidDirection(x, y, x - 1)) {
-			if (y - 1 >= 0) {
-				if (!model.containsPiece(x-1, y-1))
-					model.addAvailableMove(x-1,y-1);
-				else if (y-2 >= 0 && x-2 >= 0 && !model.comparePieceColor(x, y, x-1, y-1) && !model.containsPiece(x-2, y-2))
-					model.addAvailableMove(x-2, y-2);
-			} if (y + 1 <= 7) {
-				if (!model.containsPiece(x-1, y+1))
-					model.addAvailableMove(x-1, y+1);
-				else if (y+2 <= 7 && x-2 >= 0 && !model.comparePieceColor(x, y, x-1, y+1) && !model.containsPiece(x-2, y+2))
-					model.addAvailableMove(x-2, y+2);
-			}
-		} if (x + 1 <= 7 && model.isValidDirection(x, y, x + 1)) {
-			if (y - 1 >= 0) {
-				if(!model.containsPiece(x+1, y-1))
-					model.addAvailableMove(x+1, y-1);
-				else if (x+2 <= 7 && y-2 >=0 && !model.comparePieceColor(x, y, x+1, y-1) && !model.containsPiece(x+2, y-2))
-					model.addAvailableMove(x+2, y-2);
-			} if (y + 1 <= 7)
-				if (!model.containsPiece(x+1, y+1))
-					model.addAvailableMove(x+1, y+1);
-				else if (x+2 <= 7 && y+2 <= 7 && !model.comparePieceColor(x, y, x+1, y+1) && !model.containsPiece(x+2, y+2))
-					model.addAvailableMove(x+2, y+2);
-		}
+		model.generateAvailableMoves();
 		
 		view.repaint();
 	}
@@ -77,29 +55,10 @@ public class CheckersBoardController implements MouseListener, ActionListener {
 		CheckersPiece focusPiece = model.getFocusPiece();
 		
 		if (focusPiece == null) return;
-		
-		focusPiece.focus = true;
-		
-		int x = focusPiece.x;
-		int y = focusPiece.y;
-		int[][] coords = {{y-1, x-1, y-2, x-2,0,0}, {y+1, x-1, y+2, x-2,7,0}, {y-1, x+1, y-2, x+2,0,7}, {y+1, x+1, y+2, x+2,7,7}};
-		
-		for (int i = 0; i<4; i++) {
-			if (coords[i][0] >= coords[i][4] && coords[i][1] >= coords[i][5] && !model.comparePieceColor(x, y, coords[i][1], coords[i][0]) 
-					&& model.containsPiece(coords[i][1], coords[i][0]) && !model.containsPiece(coords[i][3], coords[i][2]))
-				model.addAvailableMove(coords[i][3], coords[i][2]);
-		}
+
+		model.generateJumpSequenceMoves();
 
 		view.repaint();
-	}
-	
-	private void checkGameOver() {
-		Color loser = (model.getTurn().equals(Color.RED)) ? Color.BLUE : Color.RED;
-		if (model.numberOfPieces(loser) == 0) {
-			Color winner = !(model.getTurn().equals(Color.RED)) ? Color.BLUE : Color.RED;
-			parent.showGameOver(winner.toString(), loser.toString());
-		}
-		
 	}
 	
 	private void handleChangeTurn(boolean pieceRemoved, CheckersCell cell) {
@@ -110,12 +69,19 @@ public class CheckersBoardController implements MouseListener, ActionListener {
 		if (model.getAvailableMoves().size() == 0) {
 			changeTurn();
 		} 
+		else if (model.getNumPlayers() == 1) {
+			synchronized(opponent) {
+				opponent.notify();
+			}
+		}
 		else {
 			model.setSwitchFocusEnabled(false);
 			view.getEndTurnButton().setEnabled(true);
 		}
 	}
 	
+	
+	/* Game State Modifiers */
 	private void changeTurn() {
 		model.changeTurn();
 		view.getMoveLabel().setText(model.getTurn() == Color.BLUE ? "BLUE" : "RED");
@@ -123,6 +89,12 @@ public class CheckersBoardController implements MouseListener, ActionListener {
 		view.getEndTurnButton().setEnabled(false);
 		
 		view.repaint();
+		
+		if (model.getNumPlayers() == 1 && model.getTurn() == Color.BLUE) {
+			synchronized(opponent) {
+				opponent.notify();
+			}
+		}
 	}
 
 	private void movePiece(CheckersCell cell) {
@@ -154,11 +126,19 @@ public class CheckersBoardController implements MouseListener, ActionListener {
 			view.getMoveButton().setEnabled(false);
 	}
 	
+	private void checkGameOver() {
+		Color loser = (model.getTurn().equals(Color.RED)) ? Color.BLUE : Color.RED;
+		if (model.getNumberOfPieces(loser) == 0) {
+			Color winner = !(model.getTurn().equals(Color.RED)) ? Color.BLUE : Color.RED;
+			parent.showGameOver(winner.toString(), loser.toString());
+		}
+		
+	}
+	
+	/* Event handlers */
 	@Override
 	public void mouseClicked(MouseEvent e) {
 	}
-
-
 
 	@Override
 	public void mousePressed(MouseEvent e) {
@@ -193,7 +173,6 @@ public class CheckersBoardController implements MouseListener, ActionListener {
 		// TODO Auto-generated method stub
 		
 	}
-
 
 	@Override
 	public void actionPerformed(ActionEvent e) {

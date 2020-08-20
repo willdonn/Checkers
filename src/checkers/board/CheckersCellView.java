@@ -63,7 +63,7 @@ public class CheckersCellView extends JPanel {
 		
 		if (model.piece == null && model.cellFocus) {
 			g.setColor(Color.YELLOW);
-			g.drawRect(0, 0, getWidth(), getHeight());
+			g.fillRect(0, 0, getWidth(), getHeight());
 		}
 		
 	}
