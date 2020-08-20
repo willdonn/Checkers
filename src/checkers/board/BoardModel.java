@@ -4,8 +4,6 @@ import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 
-import checkers.board.CheckersPiece.Type;
-
 public class BoardModel {
 
 	private List<ArrayList<CheckersCell>> board;
@@ -24,18 +22,7 @@ public class BoardModel {
 		this.availableMoves = new ArrayList<CheckersCell>();
 	}
 	
-	private void resetAvailableMoves() {
-		for (CheckersCell c : availableMoves) {
-			c.setCellFocus(false);
-		}
-		availableMoves.clear();
-		
-	}
-	
-	public boolean containsPiece(int x, int y) {
-		return board.get(x).get(y).getPiece() != null;
-	}
-	
+	/* Getters */
 	public CheckersPiece getPieceAt(int x, int y) {
 		if (containsPiece(x, y))
 			return board.get(x).get(y).getPiece();
@@ -50,33 +37,134 @@ public class BoardModel {
 		return getCellAt(piece.x, piece.y);
 	}
 	
-	public void addAvailableMove(int x, int y) {
-		CheckersCell cell = board.get(x).get(y);
-		cell.setCellFocus(true);
-		availableMoves.add(cell);
+	public int getNumPlayers() {
+		return players;
 	}
-	
-	public List<ArrayList<CheckersCell>> getBoard(){
-		return board;
-	}
-	
-	public List<ArrayList<CheckersCellView>> getBoardView(){
-		return view;
-	}
-	
-	public List<CheckersCell> getAvailableMoves(){
-		return availableMoves;
+
+	public synchronized CheckersCellView getCellView(CheckersCell cell) {
+		return view.get(cell.x).get(cell.y);
 	}
 	
 	public CheckersPiece getFocusPiece() {
 		return focusPiece;
 	}
 	
-	public Color getTurn() {
+	public synchronized Color getTurn() {
 		return turn;
 	}
 	
-	public void changeTurn() {
+	public synchronized List<ArrayList<CheckersCell>> getBoard(){
+		return board;
+	}
+	
+	public synchronized List<ArrayList<CheckersCellView>> getBoardView(){
+		return view;
+	}
+	
+	public synchronized List<CheckersCell> getAvailableMoves(){
+		return availableMoves;
+	}
+	
+	public int getNumberOfPieces(Color color) {
+		int i = 0;
+		for (List<CheckersCell> row : board) {
+			for (CheckersCell cell : row) {
+				if (cell.getPiece() != null && cell.getPiece().color.equals(color)) i++;
+			}
+		}
+		return i;
+	}
+	
+	/* Setters */
+	public void setSwitchFocusEnabled(boolean switchFocus) {
+		this.switchFocus = switchFocus;
+	}
+
+	public void setPlayers(int players) {
+		this.players = players;
+	}
+	
+	/* Piece Movement */
+	public void addAvailableMove(int x, int y) {
+		CheckersCell cell = board.get(x).get(y);
+		cell.setCellFocus(true);
+		availableMoves.add(cell);
+	}
+	
+	private void resetAvailableMoves() {
+		for (CheckersCell c : availableMoves) {
+			c.setCellFocus(false);
+		}
+		availableMoves.clear();
+	}
+	
+	public synchronized void generateAvailableMoves() {
+		if (focusPiece == null) return;
+		
+		int x = focusPiece.x;
+		int y = focusPiece.y;
+		if (x - 1 >= 0 && isValidDirection(x, y, x - 1)) {
+			if (y - 1 >= 0) {
+				if (!containsPiece(x-1, y-1))
+					addAvailableMove(x-1,y-1);
+				else if (y-2 >= 0 && x-2 >= 0 && !comparePieceColor(x, y, x-1, y-1) && !containsPiece(x-2, y-2))
+					addAvailableMove(x-2, y-2);
+			} if (y + 1 <= 7) {
+				if (!containsPiece(x-1, y+1))
+					addAvailableMove(x-1, y+1);
+				else if (y+2 <= 7 && x-2 >= 0 && !comparePieceColor(x, y, x-1, y+1) && !containsPiece(x-2, y+2))
+					addAvailableMove(x-2, y+2);
+			}
+		} if (x + 1 <= 7 && isValidDirection(x, y, x + 1)) {
+			if (y - 1 >= 0) {
+				if(!containsPiece(x+1, y-1))
+					addAvailableMove(x+1, y-1);
+				else if (x+2 <= 7 && y-2 >=0 && !comparePieceColor(x, y, x+1, y-1) && !containsPiece(x+2, y-2))
+					addAvailableMove(x+2, y-2);
+			} if (y + 1 <= 7)
+				if (!containsPiece(x+1, y+1))
+					addAvailableMove(x+1, y+1);
+				else if (x+2 <= 7 && y+2 <= 7 && !comparePieceColor(x, y, x+1, y+1) && !containsPiece(x+2, y+2))
+					addAvailableMove(x+2, y+2);
+		}
+	}
+	
+	public void generateJumpSequenceMoves() {
+		if (focusPiece == null) return;
+		
+		focusPiece.focus = true;
+		
+		int x = focusPiece.x;
+		int y = focusPiece.y;
+		if (y-2 >= 0 && x-2 >= 0 && !comparePieceColor(x, y, x-1, y-1) && containsPiece(x-1, y-1) && !containsPiece(x-2, y-2))
+			addAvailableMove(x-2, y-2);
+		if (y+2 <= 7 && x-2 >= 0 && !comparePieceColor(x, y, x-1, y+1) && containsPiece(x-1, y+1) && !containsPiece(x-2, y+2))
+			addAvailableMove(x-2, y+2);
+		if (x+2 <= 7 && y-2 >=0 && !comparePieceColor(x, y, x+1, y-1) && containsPiece(x+1, y-1) && !containsPiece(x+2, y-2))
+			addAvailableMove(x+2, y-2);
+		if (x+2 <= 7 && y+2 <= 7 && !comparePieceColor(x, y, x+1, y+1) && containsPiece(x+1, y+1) && !containsPiece(x+2, y+2))
+			addAvailableMove(x+2, y+2);
+	}
+	
+	public void movePiece(CheckersCell cell) {
+		CheckersCell originCell = getPieceCell(focusPiece);
+		originCell.setPiece(null);
+		originCell.setCellFocus(false);
+		
+		focusPiece.x = cell.getCellX();
+		focusPiece.y = cell.getCellY();
+		cell.setPiece(focusPiece);
+		
+		if (!focusPiece.isKing() && focusPiece.color.equals(Color.RED) && focusPiece.x == 0 || focusPiece.color.equals(Color.BLUE) && focusPiece.x == 7) {
+			focusPiece.setKing();
+			clearFocus();
+			focusPiece = null;	
+		}
+		resetAvailableMoves();
+	}
+	
+	/* Board Interaction */
+	public synchronized void changeTurn() {
 		resetAvailableMoves();
 		if (focusPiece != null)
 			focusPiece.focus = false;
@@ -90,7 +178,6 @@ public class BoardModel {
 		focusPiece = null;
 		resetAvailableMoves();
 	}
-
 
 	public void setFocus(CheckersCell cell) {
 		clearFocus();
@@ -110,26 +197,7 @@ public class BoardModel {
 		setFocus(cell);
 	}
 	
-	public void movePiece(CheckersCell cell) {
-		CheckersCell originCell = getPieceCell(focusPiece);
-		originCell.setPiece(null);
-		originCell.setCellFocus(false);
-		
-		focusPiece.x = cell.getCellX();
-		focusPiece.y = cell.getCellY();
-		cell.setPiece(focusPiece);
-		
-		if (focusPiece.type == CheckersPiece.Type.REGULAR && focusPiece.color.equals(Color.RED) && focusPiece.x == 0 || focusPiece.color.equals(Color.BLUE) && focusPiece.x == 7) {
-			focusPiece.type = CheckersPiece.Type.KING;
-			clearFocus();
-			focusPiece = null;
-			
-		}
-
-		resetAvailableMoves();
-		
-	}
-	
+	/* Helpers */
 	public boolean isCellFocused(CheckersCell cell) {
 		return availableMoves.contains(cell);
 	}
@@ -141,6 +209,10 @@ public class BoardModel {
 		return false;
 	}
 	
+	public boolean containsPiece(int x, int y) {
+		return board.get(x).get(y).getPiece() != null;
+	}
+	
 	public boolean isValidDirection(int x1, int y1, int x2) {
 		if (containsPiece(x1, y1)) {
 			CheckersPiece piece = getPieceAt(x1, y1);
@@ -149,28 +221,6 @@ public class BoardModel {
 			if (piece.color.equals(Color.RED) && x2 - x1 <= 0) return true;
 		}
 		return false;
-	}
-	
-	public int numberOfPieces(Color color) {
-		int i = 0;
-		for (List<CheckersCell> row : board) {
-			for (CheckersCell cell : row) {
-				if (cell.getPiece() != null && cell.getPiece().color.equals(color)) i++;
-			}
-		}
-		return i;
-	}
-
-	public void setSwitchFocusEnabled(boolean switchFocus) {
-		this.switchFocus = switchFocus;
-	}
-
-	public void setPlayers(int players) {
-		this.players = players;
-	}
-	
-	public int players() {
-		return players;
 	}
 	
 }
