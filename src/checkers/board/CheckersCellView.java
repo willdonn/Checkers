@@ -66,11 +66,6 @@ public class CheckersCellView extends JPanel {
 			g.drawRect(0, 0, getWidth(), getHeight());
 		}
 		
-		if (model.piece == null && model.moveFocus) {
-			g.setColor(Color.GRAY);
-			g.drawOval(centrX-radius, centrY-radius, radius*2, radius*2);
-		}
-		
 	}
 
 }

@@ -10,8 +10,8 @@ public class BoardModel {
 
 	private List<ArrayList<CheckersCell>> board;
 	private List<ArrayList<CheckersCellView>> view;
-	private List<CheckersCell> focusCells;
-	private CheckersCell moveCell;
+	private List<CheckersCell> availableMoves;
+	private List<CheckersCell> availablePieces;
 	private CheckersPiece focusPiece;
 	
 	private Color turn = Color.RED;
@@ -21,14 +21,14 @@ public class BoardModel {
 	public BoardModel(List<ArrayList<CheckersCell>> board, List<ArrayList<CheckersCellView>> view) {
 		this.board = board;
 		this.view = view;
-		this.focusCells = new ArrayList<CheckersCell>();
+		this.availableMoves = new ArrayList<CheckersCell>();
 	}
 	
-	private void resetCellFocus() {
-		for (CheckersCell c : focusCells) {
+	private void resetAvailableMoves() {
+		for (CheckersCell c : availableMoves) {
 			c.setCellFocus(false);
 		}
-		focusCells.clear();
+		availableMoves.clear();
 		
 	}
 	
@@ -50,20 +50,10 @@ public class BoardModel {
 		return getCellAt(piece.x, piece.y);
 	}
 	
-	public void addFocusCell(int x, int y) {
+	public void addAvailableMove(int x, int y) {
 		CheckersCell cell = board.get(x).get(y);
 		cell.setCellFocus(true);
-		focusCells.add(cell);
-	}
-	
-	public void setMoveCell(CheckersCell cell) {
-		if (moveCell != null) moveCell.setMoveFocus(false);
-		moveCell = cell;
-		moveCell.setMoveFocus(true);
-	}
-	
-	public CheckersCell getMoveCell() {
-		return moveCell;
+		availableMoves.add(cell);
 	}
 	
 	public List<ArrayList<CheckersCell>> getBoard(){
@@ -74,8 +64,8 @@ public class BoardModel {
 		return view;
 	}
 	
-	public List<CheckersCell> getFocusCells(){
-		return focusCells;
+	public List<CheckersCell> getAvailableMoves(){
+		return availableMoves;
 	}
 	
 	public CheckersPiece getFocusPiece() {
@@ -87,7 +77,7 @@ public class BoardModel {
 	}
 	
 	public void changeTurn() {
-		resetCellFocus();
+		resetAvailableMoves();
 		if (focusPiece != null)
 			focusPiece.focus = false;
 		focusPiece = null;
@@ -97,14 +87,11 @@ public class BoardModel {
 	
 	public void clearFocus() {
 		if (focusPiece != null) focusPiece.focus = false;
-		if (moveCell != null) {
-			moveCell.setMoveFocus(false);
-			moveCell = null;
-		}
-		
-		resetCellFocus();
+		focusPiece = null;
+		resetAvailableMoves();
 	}
-	
+
+
 	public void setFocus(CheckersCell cell) {
 		clearFocus();
 		
@@ -116,44 +103,35 @@ public class BoardModel {
 		if (!switchFocus) return;
 		
 		if (cell.containsPiece(focusPiece) || !turn.equals(cell.getPiece().color)) {
-			focusPiece = null;
+			clearFocus();
 			return;
 		}
 	
 		setFocus(cell);
 	}
 	
-	public void movePiece() {
+	public void movePiece(CheckersCell cell) {
 		CheckersCell originCell = getPieceCell(focusPiece);
 		originCell.setPiece(null);
 		originCell.setCellFocus(false);
 		
-		focusPiece.x = moveCell.getCellX();
-		focusPiece.y = moveCell.getCellY();
-		moveCell.setPiece(focusPiece);
+		focusPiece.x = cell.getCellX();
+		focusPiece.y = cell.getCellY();
+		cell.setPiece(focusPiece);
 		
-		if (focusPiece.color.equals(Color.RED) && focusPiece.x == 0 || focusPiece.color.equals(Color.BLUE) && focusPiece.x == 7) {
+		if (focusPiece.type == CheckersPiece.Type.REGULAR && focusPiece.color.equals(Color.RED) && focusPiece.x == 0 || focusPiece.color.equals(Color.BLUE) && focusPiece.x == 7) {
 			focusPiece.type = CheckersPiece.Type.KING;
 			clearFocus();
 			focusPiece = null;
 			
 		}
 
-		resetCellFocus();
+		resetAvailableMoves();
 		
 	}
 	
 	public boolean isCellFocused(CheckersCell cell) {
-		return focusCells.contains(cell);
-	}
-	
-	public boolean isMoveCell(CheckersCell cell) { 
-		if (moveCell == null) return false;
-		return moveCell.equals(cell);	
-	}
-	
-	public boolean isMoveCell() {
-		return (moveCell == null) ? false : moveCell.getMoveFocus();
+		return availableMoves.contains(cell);
 	}
 
 	public boolean comparePieceColor(int x1, int y1, int x2, int y2) {
