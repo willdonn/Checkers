@@ -48,32 +48,32 @@ public class CheckersBoardController implements MouseListener, ActionListener {
 		if (x - 1 >= 0 && model.isValidDirection(x, y, x - 1)) {
 			if (y - 1 >= 0) {
 				if (!model.containsPiece(x-1, y-1))
-					model.addFocusCell(x-1,y-1);
+					model.addAvailableMove(x-1,y-1);
 				else if (y-2 >= 0 && x-2 >= 0 && !model.comparePieceColor(x, y, x-1, y-1) && !model.containsPiece(x-2, y-2))
-					model.addFocusCell(x-2, y-2);
+					model.addAvailableMove(x-2, y-2);
 			} if (y + 1 <= 7) {
 				if (!model.containsPiece(x-1, y+1))
-					model.addFocusCell(x-1, y+1);
+					model.addAvailableMove(x-1, y+1);
 				else if (y+2 <= 7 && x-2 >= 0 && !model.comparePieceColor(x, y, x-1, y+1) && !model.containsPiece(x-2, y+2))
-					model.addFocusCell(x-2, y+2);
+					model.addAvailableMove(x-2, y+2);
 			}
 		} if (x + 1 <= 7 && model.isValidDirection(x, y, x + 1)) {
 			if (y - 1 >= 0) {
 				if(!model.containsPiece(x+1, y-1))
-					model.addFocusCell(x+1, y-1);
+					model.addAvailableMove(x+1, y-1);
 				else if (x+2 <= 7 && y-2 >=0 && !model.comparePieceColor(x, y, x+1, y-1) && !model.containsPiece(x+2, y-2))
-					model.addFocusCell(x+2, y-2);
+					model.addAvailableMove(x+2, y-2);
 			} if (y + 1 <= 7)
 				if (!model.containsPiece(x+1, y+1))
-					model.addFocusCell(x+1, y+1);
+					model.addAvailableMove(x+1, y+1);
 				else if (x+2 <= 7 && y+2 <= 7 && !model.comparePieceColor(x, y, x+1, y+1) && !model.containsPiece(x+2, y+2))
-					model.addFocusCell(x+2, y+2);
+					model.addAvailableMove(x+2, y+2);
 		}
 		
 		view.repaint();
 	}
 	
-	private void handleJumpSequence(CheckersCell cell) {
+	private void handleJumpSequence() {
 		CheckersPiece focusPiece = model.getFocusPiece();
 		
 		if (focusPiece == null) return;
@@ -82,14 +82,13 @@ public class CheckersBoardController implements MouseListener, ActionListener {
 		
 		int x = focusPiece.x;
 		int y = focusPiece.y;
-		if (y-2 >= 0 && x-2 >= 0 && !model.comparePieceColor(x, y, x-1, y-1) && model.containsPiece(x-1, y-1) && !model.containsPiece(x-2, y-2))
-				model.addFocusCell(x-2, y-2);
-		if (y+2 <= 7 && x-2 >= 0 && !model.comparePieceColor(x, y, x-1, y+1) && model.containsPiece(x-1, y+1) && !model.containsPiece(x-2, y+2))
-				model.addFocusCell(x-2, y+2);
-		if (x+2 <= 7 && y-2 >=0 && !model.comparePieceColor(x, y, x+1, y-1) && model.containsPiece(x+1, y-1) && !model.containsPiece(x+2, y-2))
-				model.addFocusCell(x+2, y-2);
-		if (x+2 <= 7 && y+2 <= 7 && !model.comparePieceColor(x, y, x+1, y+1) && model.containsPiece(x+1, y+1) && !model.containsPiece(x+2, y+2))
-				model.addFocusCell(x+2, y+2);
+		int[][] coords = {{y-1, x-1, y-2, x-2,0,0}, {y+1, x-1, y+2, x-2,7,0}, {y-1, x+1, y-2, x+2,0,7}, {y+1, x+1, y+2, x+2,7,7}};
+		
+		for (int i = 0; i<4; i++) {
+			if (coords[i][0] >= coords[i][4] && coords[i][1] >= coords[i][5] && !model.comparePieceColor(x, y, coords[i][1], coords[i][0]) 
+					&& model.containsPiece(coords[i][1], coords[i][0]) && !model.containsPiece(coords[i][3], coords[i][2]))
+				model.addAvailableMove(coords[i][3], coords[i][2]);
+		}
 
 		view.repaint();
 	}
@@ -105,12 +104,10 @@ public class CheckersBoardController implements MouseListener, ActionListener {
 	
 	private void handleChangeTurn(boolean pieceRemoved, CheckersCell cell) {
 		if (pieceRemoved && model.getFocusPiece() != null) {
-			model.changeFocus(cell);
-			model.changeFocus(cell);
-			handleJumpSequence(model.getPieceCell(model.getFocusPiece()));
+			handleJumpSequence();
 		}
 		
-		if (model.getFocusCells().size() == 0) {
+		if (model.getAvailableMoves().size() == 0) {
 			changeTurn();
 		} 
 		else {
@@ -128,36 +125,33 @@ public class CheckersBoardController implements MouseListener, ActionListener {
 		view.repaint();
 	}
 
-	private void movePiece() {
+	private void movePiece(CheckersCell cell) {
 		boolean removedPiece = false;
-		if (model.getMoveCell().getPiece() == null && model.isMoveCell() && model.getFocusPiece() != null) {
-			CheckersCell cell = model.getMoveCell();
-			int x1 = model.getFocusPiece().x;
-			int y1 = model.getFocusPiece().y;
-			int x2 = cell.getCellX();
-			int y2 = cell.getCellY();
-			if (Math.abs(x1-x2) == 2 || (Math.abs(y1-y2) == 2)){
-				removedPiece = true;
-				if (x1 - x2 < 0) {
-					if (y1 - y2 < 0)
-						model.getCellAt(x1+1, y1+1).removePiece();
-					else
-						model.getCellAt(x1+1, y1-1).removePiece();
-				} else {
-					if (y1 - y2 < 0)
-						model.getCellAt(x1-1, y1+1).removePiece();
-					else
-						model.getCellAt(x1-1, y1-1).removePiece();
-				}
-				
-				checkGameOver();
+		int x1 = model.getFocusPiece().x;
+		int y1 = model.getFocusPiece().y;
+		int x2 = cell.getCellX();
+		int y2 = cell.getCellY();
+		if (Math.abs(x1-x2) == 2 || (Math.abs(y1-y2) == 2)){
+			removedPiece = true;
+			if (x1 - x2 < 0) {
+				if (y1 - y2 < 0)
+					model.getCellAt(x1+1, y1+1).removePiece();
+				else
+					model.getCellAt(x1+1, y1-1).removePiece();
+			} else {
+				if (y1 - y2 < 0)
+					model.getCellAt(x1-1, y1+1).removePiece();
+				else
+					model.getCellAt(x1-1, y1-1).removePiece();
+			}
+			
+			checkGameOver();
 				
 			}
 			
-			model.movePiece();
+			model.movePiece(cell);
 			handleChangeTurn(removedPiece, cell);
 			view.getMoveButton().setEnabled(false);
-		} 
 	}
 	
 	@Override
@@ -177,11 +171,7 @@ public class CheckersBoardController implements MouseListener, ActionListener {
 			model.changeFocus(cell);
 			handlePieceSelected(cell);
 		}
-		if (model.isCellFocused(cell) && !model.isMoveCell(cell)) {
-			model.setMoveCell(cell);
-			view.getMoveButton().setEnabled(true);
-		}
-		else if (model.isMoveCell()) movePiece();
+		else if (model.getFocusPiece() != null && model.getAvailableMoves().contains(cell)) movePiece(cell);
 		
 		view.repaint();
 	}
@@ -208,10 +198,7 @@ public class CheckersBoardController implements MouseListener, ActionListener {
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		// TODO Auto-generated method stub
-		if (e.getSource() == view.getMoveButton()) {
-			movePiece();
-		}
-		else if (e.getSource() == view.getEndTurnButton()) {
+		if (e.getSource() == view.getEndTurnButton()) {
 			model.clearFocus();
 			changeTurn();
 		}
