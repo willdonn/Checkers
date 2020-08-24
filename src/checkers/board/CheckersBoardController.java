@@ -5,25 +5,33 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.ArrayList;
 import java.util.List;
 
+import javax.security.auth.Refreshable;
+
 import checkers.CheckersView;
+import checkers.menu.settings.GameSettingsModel;
 import checkers.opponent.AI.CheckersAI;
 
 public class CheckersBoardController implements MouseListener, ActionListener {
 	
 	private BoardModel model;
+	private GameSettingsModel settings;
 	private CheckersBoardPane view;
 	private CheckersView parent;
 	private CheckersAI opponent;
 	
-	public CheckersBoardController(CheckersBoardPane view, int players, CheckersView parent) {
-		this.model = view.getModel();
-		model.setPlayers(players);
-		if (players == 1) {
-			opponent = new CheckersAI(model);
-			Thread t = new Thread(opponent);
-			t.start();
+	public CheckersBoardController(CheckersBoardPane view, GameSettingsModel settings, CheckersView parent) {
+		this.model = new BoardModel(view.getCheckersCells(), view.getCheckersCellViews(), settings);
+		this.settings = settings;
+		view.getMoveLabel().setForeground(settings.getPlayer1Team());
+		view.getMoveLabel().setText(settings.getPlayer1Team() == Color.RED ? "RED" : "BLUE");
+		if (settings.isPieceFocusAssist()) model.refreshAvailablePieces();
+		if (settings.isOnePlayer()) {
+			opponent = new CheckersAI(model, settings.getPlayer2Team());
+			Thread oppponentThread = new Thread(opponent);
+			oppponentThread.start();
 		}
 		this.parent = parent;
 		this.view = view;
@@ -31,9 +39,9 @@ public class CheckersBoardController implements MouseListener, ActionListener {
 	}
 	
 	private void mapActions() {
-		view.getMoveButton().addActionListener(this);
+		view.getMenuButton().addActionListener(this);
 		view.getEndTurnButton().addActionListener(this);
-		
+		if (settings.isOnePlayer()) view.getUndoButton().addActionListener(this);
 		for (List<CheckersCellView> row : model.getBoardView()) {
 			for (CheckersCellView cell : row) {
 				cell.addMouseListener(this);
@@ -44,9 +52,7 @@ public class CheckersBoardController implements MouseListener, ActionListener {
 	/* Game transaction handlers */
 	private void handlePieceSelected(CheckersCell cell) {
 		
-		view.getMoveButton().setEnabled(false);
-		
-		model.generateAvailableMoves();
+		model.refreshAvailableMoves();
 		
 		view.repaint();
 	}
@@ -56,20 +62,21 @@ public class CheckersBoardController implements MouseListener, ActionListener {
 		
 		if (focusPiece == null) return;
 
-		model.generateJumpSequenceMoves();
+		model.refreshJumpSequenceMoves();
 
 		view.repaint();
 	}
 	
 	private void handleChangeTurn(boolean pieceRemoved, CheckersCell cell) {
 		if (pieceRemoved && model.getFocusPiece() != null) {
+			view.getEndTurnButton().setEnabled(true);
 			handleJumpSequence();
 		}
 		
 		if (model.getAvailableMoves().size() == 0) {
 			changeTurn();
 		} 
-		else if (model.getNumPlayers() == 1) {
+		else if (settings.isOnePlayer()) {
 			synchronized(opponent) {
 				opponent.notify();
 			}
@@ -87,10 +94,13 @@ public class CheckersBoardController implements MouseListener, ActionListener {
 		view.getMoveLabel().setText(model.getTurn() == Color.BLUE ? "BLUE" : "RED");
 		view.getMoveLabel().setForeground(model.getTurn());
 		view.getEndTurnButton().setEnabled(false);
+		if (settings.isOnePlayer()) view.getUndoButton().setEnabled(model.getTurn() == settings.getPlayer1Team() && model.isUndoAvailable());
+		
+		if (settings.isPieceFocusAssist()) model.refreshAvailablePieces();
 		
 		view.repaint();
 		
-		if (model.getNumPlayers() == 1 && model.getTurn() == Color.BLUE) {
+		if (!checkGameOver() && settings.isOnePlayer() && model.getTurn().equals(settings.getPlayer2Team())) {
 			synchronized(opponent) {
 				opponent.notify();
 			}
@@ -98,6 +108,7 @@ public class CheckersBoardController implements MouseListener, ActionListener {
 	}
 
 	private void movePiece(CheckersCell cell) {
+		if (settings.isOnePlayer() && model.getTurn() == settings.getPlayer1Team()) model.saveState();
 		boolean removedPiece = false;
 		int x1 = model.getFocusPiece().x;
 		int y1 = model.getFocusPiece().y;
@@ -116,23 +127,43 @@ public class CheckersBoardController implements MouseListener, ActionListener {
 				else
 					model.getCellAt(x1-1, y1-1).removePiece();
 			}
-			
-			checkGameOver();
 				
-			}
-			
-			model.movePiece(cell);
-			handleChangeTurn(removedPiece, cell);
-			view.getMoveButton().setEnabled(false);
+		}
+
+		model.movePiece(cell);
+		handleChangeTurn(removedPiece, cell);
 	}
 	
-	private void checkGameOver() {
-		Color loser = (model.getTurn().equals(Color.RED)) ? Color.BLUE : Color.RED;
-		if (model.getNumberOfPieces(loser) == 0) {
-			Color winner = !(model.getTurn().equals(Color.RED)) ? Color.BLUE : Color.RED;
-			parent.showGameOver(winner.toString(), loser.toString());
-		}
+	private boolean checkGameOver() {
 		
+		Color team = model.getTurn();
+		
+		boolean moveAvailable = false;
+		for (List<CheckersCell> row : model.getBoard()) {
+			for (CheckersCell cell : row) {
+				if (moveAvailable) break;
+				if (cell.getPiece() != null && cell.getPiece().color == team) {
+					model.setFocus(cell);
+					model.refreshAvailableMoves();
+					if (model.getAvailableMoves() != null && !model.getAvailableMoves().isEmpty()) {
+						moveAvailable = true;
+						break;
+					}
+				}
+			}
+		}
+				
+		if (model.getNumberOfPieces(team) == 0 || !moveAvailable) {
+			String loser = (model.getTurn().equals(Color.RED)) ? "RED" : "BLUE";
+			String winner = !(model.getTurn().equals(Color.RED)) ? "RED" : "BLUE";
+			if (settings.isOnePlayer())
+				opponent.stop();
+
+			parent.showGameOver(winner, loser);
+			return true;
+		}
+		model.clearFocus();
+		return false;
 	}
 	
 	/* Event handlers */
@@ -147,7 +178,7 @@ public class CheckersBoardController implements MouseListener, ActionListener {
 		
 		if (cell == null) return;
 		
-		if (cell.getPiece() != null) {
+		if (cell.getPiece() != null && cell.getPiece().color == model.getTurn()) {
 			model.changeFocus(cell);
 			handlePieceSelected(cell);
 		}
@@ -180,6 +211,19 @@ public class CheckersBoardController implements MouseListener, ActionListener {
 		if (e.getSource() == view.getEndTurnButton()) {
 			model.clearFocus();
 			changeTurn();
+		}
+		else if (e.getSource() == view.getMenuButton()) {
+			if (settings.isOnePlayer()) {
+				opponent.stop();
+			}
+			parent.showStartMenu();
+		}
+		
+		else if (e.getSource() == view.getUndoButton()) {
+			model.undo();
+			if (settings.isPieceFocusAssist()) model.refreshAvailablePieces();
+			view.getUndoButton().setEnabled(model.isUndoAvailable());
+			view.repaint();
 		}
 		
 	}

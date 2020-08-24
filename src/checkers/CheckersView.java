@@ -9,8 +9,11 @@ import checkers.board.CheckersBoardController;
 import checkers.board.CheckersBoardPane;
 import checkers.gameover.GameOverController;
 import checkers.gameover.GameOverPane;
-import checkers.menu.StartMenuController;
-import checkers.menu.StartMenuPane;
+import checkers.menu.settings.GameSettingsController;
+import checkers.menu.settings.GameSettingsModel;
+import checkers.menu.settings.GameSettingsPane;
+import checkers.menu.start.StartMenuController;
+import checkers.menu.start.StartMenuPane;
 import checkers.opponent.AI.CheckersAI;
 
 public class CheckersView extends JFrame {
@@ -25,21 +28,21 @@ public class CheckersView extends JFrame {
 	StartMenuPane startMenu;
 	StartMenuController startMenuController;
 	
+	GameSettingsPane gameSettingsMenu;
+	GameSettingsController gameSettingsController;
+	
 	GameOverPane gameOver;
 	GameOverController gameOverController;
 	
-	private enum ViewState {MENU, GAME, OVER};
+	private enum ViewState {START_MENU, SETTINGS_MENU, GAME, OVER};
 	
 	public ViewState state;
-	private CheckersAI checkersAI;
 	
 	public CheckersView() {
 		super();
-		state = ViewState.MENU;
+		state = ViewState.START_MENU;
 		setTitle("Checkers");
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
-		setLayout(new BorderLayout());
-		//setLayout(new BorderLayout());
 		initWindow();
 		showStartMenu();
 		run();
@@ -66,13 +69,20 @@ public class CheckersView extends JFrame {
 	public void showStartMenu() {
 		startMenu = new StartMenuPane(this);
 		startMenuController = new StartMenuController(startMenu, this);
-		state = ViewState.MENU;
+		state = ViewState.START_MENU;
 		showView();
 	}
 	
-	public void startGame(int players) {
-		checkersBoard = new CheckersBoardPane(this);
-		checkersBoardController = new CheckersBoardController(checkersBoard, players, this);
+	public void showSettingsMenu(int players) {
+		gameSettingsMenu = new GameSettingsPane(players);
+		gameSettingsController = new GameSettingsController(gameSettingsMenu, players, this);
+		state = ViewState.SETTINGS_MENU;
+		showView();
+	}
+	
+	public void startGame(GameSettingsModel settings) {
+		checkersBoard = new CheckersBoardPane(this, settings);
+		checkersBoardController = new CheckersBoardController(checkersBoard, settings, this);
 		state = ViewState.GAME;
 		showView();
 	}
@@ -81,10 +91,10 @@ public class CheckersView extends JFrame {
 		getContentPane().removeAll();
 		getContentPane().invalidate();
 
-		if (state == ViewState.GAME) add(checkersBoard, BorderLayout.CENTER);
-		else if (state == ViewState.MENU) add(startMenu, BorderLayout.CENTER);
-		else if (state == ViewState.OVER) add(gameOver, BorderLayout.CENTER);
-		
+		if (state == ViewState.GAME) add(checkersBoard);
+		else if (state == ViewState.START_MENU) add(startMenu);
+		else if (state == ViewState.OVER) add(gameOver);
+		else if (state == ViewState.SETTINGS_MENU) add(gameSettingsMenu);
 		getContentPane().revalidate();
 	}
 	
