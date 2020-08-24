@@ -4,10 +4,11 @@ import java.awt.Color;
 
 public class CheckersPiece {
 	
-	public Color color;
-	public boolean focus;
-	public int x;
-	public int y;
+	protected Color color;
+	protected boolean focus;
+	protected boolean available;
+	protected int x;
+	protected int y;
 	
 	public enum Type { 
 			REGULAR,
@@ -22,6 +23,7 @@ public class CheckersPiece {
 		this.x = x;
 		this.y = y;
 		this.type = Type.REGULAR;
+		this.available = false;
 	}
 	
 	public boolean isKing() {
@@ -30,6 +32,10 @@ public class CheckersPiece {
 
 	public void setKing() {
 		type = Type.KING;
+	}
+
+	public Color getColor() {
+		return color;
 	}
 
 }

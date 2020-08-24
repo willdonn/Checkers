@@ -2,6 +2,7 @@ package checkers.board;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.GridLayout;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +14,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import checkers.CheckersView;
+import checkers.menu.settings.GameSettingsModel;
 
 public class CheckersBoardPane extends JPanel {
 	
@@ -25,23 +27,24 @@ public class CheckersBoardPane extends JPanel {
 	
 	private List<ArrayList<CheckersCellView>> views;
 	private List<ArrayList<CheckersCell>> cells;
-
-	private BoardModel boardModel;
 	
 	private JPanel boardPanel;
 	
 	private JPanel infoPanel;
 	private JLabel moveLabel;
-	private JButton moveButton;
+	private JButton menuButton;
 	private JButton endTurn;
+	private GameSettingsModel settings;
+
+	private JButton undo;
 	
-	public CheckersBoardPane(CheckersView parent) {
+	public CheckersBoardPane(CheckersView parent, GameSettingsModel settings) {
 		super();
 		this.parent = parent;
+		this.settings = settings;
 		initInfoPanel();
 		initBoardPanel();
 		initView();
-		initModel();
 	}
 	
 	private void initView() {
@@ -67,13 +70,13 @@ public class CheckersBoardPane extends JPanel {
 			for (int j = 0; j < 8; j++) {
 				if (start) {
 					if (i < 3)
-						cells.get(i).add(new CheckersCell(Color.BLACK, new CheckersPiece(Color.BLUE, i, j), i, j));
+						cells.get(i).add(new CheckersCell(Color.BLACK, settings.isMoveFocusAssist(), new CheckersPiece(settings.getPlayer2Team(), i, j), i, j));
 					else if (i > 4)
-						cells.get(i).add(new CheckersCell(Color.BLACK, new CheckersPiece(Color.RED, i, j), i, j));
+						cells.get(i).add(new CheckersCell(Color.BLACK, settings.isMoveFocusAssist(), new CheckersPiece(settings.getPlayer1Team(), i, j), i, j));
 					else
-						cells.get(i).add(new CheckersCell(Color.BLACK, null, i, j));
+						cells.get(i).add(new CheckersCell(Color.BLACK, settings.isMoveFocusAssist(), null, i, j));
 				}
-				else cells.get(i).add(new CheckersCell(Color.WHITE, null, i, j));
+				else cells.get(i).add(new CheckersCell(Color.WHITE, settings.isMoveFocusAssist(), null, i, j));
 				start = !start;
 			}
 			start = !start;
@@ -96,38 +99,43 @@ public class CheckersBoardPane extends JPanel {
 		
 		infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.X_AXIS));
 		
-		moveLabel = new JLabel("RED");
+		moveLabel = new JLabel();
 		moveLabel.setBorder(BorderFactory.createEmptyBorder(0, parent.getWidth()/3, 0, parent.getWidth()/3));
-		moveLabel.setForeground(Color.RED);
-		moveButton = new JButton("MOVE");
-		moveButton.setEnabled(false);
-		endTurn = new JButton("FINISH");
+		moveLabel.setFont(new Font("Comic Sans", Font.PLAIN, 24));
+		menuButton = new JButton("MAIN MENU");
+		endTurn = new JButton("FINISH TURN");
 		endTurn.setEnabled(false);
+		undo = new JButton("UNDO");
+		undo.setEnabled(false);
 		infoPanel.add(moveLabel);
-		infoPanel.add(moveButton);
+		if (settings.isOnePlayer() && settings.isAllowUndo()) infoPanel.add(undo);
 		infoPanel.add(endTurn);
+		infoPanel.add(menuButton);
 	}
 	
 	
-	public JLabel getMoveLabel() {
+	protected JLabel getMoveLabel() {
 		return moveLabel;
 	}
 	
-	public JButton getMoveButton() {
-		return moveButton;
+	protected JButton getMenuButton() {
+		return menuButton;
 	}
 	
-	public JButton getEndTurnButton() {
+	protected JButton getEndTurnButton() {
 		return endTurn;
 	}
 	
-	
-	private void initModel() {
-		boardModel = new BoardModel(cells, views);
+	protected JButton getUndoButton() {
+		return undo;
 	}
 	
-	public BoardModel getModel() {
-		return boardModel;
+	protected List<ArrayList<CheckersCell>> getCheckersCells(){
+		return cells;
+	}
+	
+	protected List<ArrayList<CheckersCellView>> getCheckersCellViews(){
+		return views;
 	}
 	
 }

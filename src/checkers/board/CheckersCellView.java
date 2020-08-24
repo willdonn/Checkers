@@ -1,17 +1,9 @@
 package checkers.board;
 
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.image.BufferedImage;
-import java.awt.image.ColorModel;
 
-import javax.swing.BorderFactory;
 import javax.swing.JPanel;
-import javax.swing.border.BevelBorder;
 
 public class CheckersCellView extends JPanel {
 
@@ -58,10 +50,11 @@ public class CheckersCellView extends JPanel {
 			if (model.piece.focus) {
 				g.setColor(Color.YELLOW);
 				g.drawOval(centrX-radius, centrY-radius, radius*2, radius*2);
+			} else if (model.piece.available) {
+				g.setColor(Color.CYAN);
+				g.drawOval(centrX-radius, centrY-radius, radius*2, radius*2);
 			}
-		}
-		
-		if (model.piece == null && model.cellFocus) {
+		} else if (model.cellFocus && model.isShowAvailableMove) {
 			g.setColor(Color.YELLOW);
 			g.fillRect(0, 0, getWidth(), getHeight());
 		}

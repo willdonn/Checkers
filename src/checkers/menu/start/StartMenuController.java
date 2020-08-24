@@ -1,4 +1,4 @@
-package checkers.menu;
+package checkers.menu.start;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -23,8 +23,8 @@ public class StartMenuController implements ActionListener{
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		if (e.getSource() == view.getStartGameOnePlayerButton()) parent.startGame(1);
-		else if (e.getSource() == view.getStartGameTwoPlayerButton()) parent.startGame(2);
+		if (e.getSource() == view.getStartGameOnePlayerButton()) parent.showSettingsMenu(1);
+		else if (e.getSource() == view.getStartGameTwoPlayerButton()) parent.showSettingsMenu(2);
 	}
 	
 }

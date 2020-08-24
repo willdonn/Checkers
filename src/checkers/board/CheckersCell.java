@@ -7,18 +7,21 @@ public class CheckersCell {
 	
 	protected boolean cellFocus = false;
 	protected boolean moveFocus = false;
+	protected boolean isShowAvailableMove;
+	protected boolean showFocus;
 	protected Color color;
 	protected CheckersPiece piece;
 	protected int x;
 	protected int y;
 	protected Dimension size;
 	
-	public CheckersCell(Color c, CheckersPiece piece, int x, int y) {
+	public CheckersCell(Color c, boolean isShowAvailableMove, CheckersPiece piece, int x, int y) {
 		super();
 		this.x = x;
 		this.y = y;
 		this.color = c;
 		this.piece= piece;
+		this.isShowAvailableMove = isShowAvailableMove;
 		this.size = new Dimension(100, 100);
 	}
 	
@@ -46,6 +49,13 @@ public class CheckersCell {
 		this.moveFocus = focus;
 	}
 	
+
+	public void setAvailablePiece(boolean available) {
+		if (piece != null) {
+			piece.available = available;
+		}
+	}
+	
 	public boolean getMoveFocus() {
 		return moveFocus;
 	}
@@ -67,4 +77,5 @@ public class CheckersCell {
 		piece = null;
 		cellFocus = false;
 	}
+
 }
