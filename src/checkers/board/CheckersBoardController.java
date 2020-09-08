@@ -23,7 +23,7 @@ public class CheckersBoardController implements MouseListener, ActionListener {
 	private CheckersAI opponent;
 	
 	public CheckersBoardController(CheckersBoardPane view, GameSettingsModel settings, CheckersView parent) {
-		this.model = new BoardModel(view.getCheckersCells(), view.getCheckersCellViews(), settings);
+		this.model = new BoardModel(view.getBoard(), settings);
 		this.settings = settings;
 		view.getMoveLabel().setForeground(settings.getPlayer1Team());
 		view.getMoveLabel().setText(settings.getPlayer1Team() == Color.RED ? "RED" : "BLUE");
@@ -42,9 +42,9 @@ public class CheckersBoardController implements MouseListener, ActionListener {
 		view.getMenuButton().addActionListener(this);
 		view.getEndTurnButton().addActionListener(this);
 		if (settings.isOnePlayer()) view.getUndoButton().addActionListener(this);
-		for (List<CheckersCellView> row : model.getBoardView()) {
-			for (CheckersCellView cell : row) {
-				cell.addMouseListener(this);
+		for (List<CheckersCell> row : model.getBoard()) {
+			for (CheckersCell cell : row) {
+				cell.getView().addMouseListener(this);
 			}
 		}
 	}
@@ -61,7 +61,6 @@ public class CheckersBoardController implements MouseListener, ActionListener {
 		CheckersPiece focusPiece = model.getFocusPiece();
 		
 		if (focusPiece == null) return;
-
 		model.refreshJumpSequenceMoves();
 
 		view.repaint();
@@ -75,11 +74,6 @@ public class CheckersBoardController implements MouseListener, ActionListener {
 		
 		if (model.getAvailableMoves().size() == 0) {
 			changeTurn();
-		} 
-		else if (settings.isOnePlayer()) {
-			synchronized(opponent) {
-				opponent.notify();
-			}
 		}
 		else {
 			model.setSwitchFocusEnabled(false);

@@ -5,8 +5,8 @@ import java.awt.Dimension;
 
 public class CheckersCell {
 	
+	private CheckersCellView view;
 	protected boolean cellFocus = false;
-	protected boolean moveFocus = false;
 	protected boolean isShowAvailableMove;
 	protected boolean showFocus;
 	protected Color color;
@@ -23,6 +23,7 @@ public class CheckersCell {
 		this.piece= piece;
 		this.isShowAvailableMove = isShowAvailableMove;
 		this.size = new Dimension(100, 100);
+		this.view = new CheckersCellView(this);
 	}
 	
 	public void setPiece(CheckersPiece piece) {
@@ -33,31 +34,10 @@ public class CheckersCell {
 		return piece;
 	}
 	
-	public void setPieceFocus(boolean focus) {
-		if (piece != null) {
-			piece.focus = focus;
-		}
-	}
-	
 	public void setCellFocus(boolean focus) {
 		if (piece == null) {
 			this.cellFocus = focus;
 		}
-	}
-	
-	public void setMoveFocus(boolean focus) {
-		this.moveFocus = focus;
-	}
-	
-
-	public void setAvailablePiece(boolean available) {
-		if (piece != null) {
-			piece.available = available;
-		}
-	}
-	
-	public boolean getMoveFocus() {
-		return moveFocus;
 	}
 	
 	public int getCellX() {
@@ -68,8 +48,12 @@ public class CheckersCell {
 		return y;
 	}
 
+	public CheckersCellView getView() {
+		return view;
+	}
 	
 	public boolean containsPiece(CheckersPiece piece) {
+		if (piece == null) return false;
 		return this.piece.equals(piece);
 	}
 	

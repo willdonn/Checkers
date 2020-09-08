@@ -7,8 +7,8 @@ public class CheckersPiece {
 	protected Color color;
 	protected boolean focus;
 	protected boolean available;
-	protected int x;
-	protected int y;
+	public int x;
+	public int y;
 	
 	public enum Type { 
 			REGULAR,
@@ -36,6 +36,20 @@ public class CheckersPiece {
 
 	public Color getColor() {
 		return color;
+	}
+	
+	public void setAvailablePiece(boolean available) {
+		this.available = available;
+	}
+	
+	public void setPieceFocus(boolean focus) {
+		this.focus = focus;
+	}
+	
+	public CheckersPiece clone() {
+		CheckersPiece newPiece = new CheckersPiece(this.color, this.x, this.y);
+		newPiece.type = this.type;
+		return newPiece;
 	}
 
 }

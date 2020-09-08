@@ -24,7 +24,7 @@ public class CheckersCellView extends JPanel {
 		setSize(model.size);
 	}
 	
-	public CheckersCell getModel() {
+	protected CheckersCell getModel() {
 		return model;
 	}
 	
