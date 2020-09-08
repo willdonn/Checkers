@@ -25,8 +25,7 @@ public class CheckersBoardPane extends JPanel {
 
 	private CheckersView parent;
 	
-	private List<ArrayList<CheckersCellView>> views;
-	private List<ArrayList<CheckersCell>> cells;
+	private CheckersBoard board;
 	
 	private JPanel boardPanel;
 	
@@ -57,8 +56,7 @@ public class CheckersBoardPane extends JPanel {
 		
 		boardPanel = new JPanel();
 		
-		cells = new ArrayList<ArrayList<CheckersCell>>();
-		views = new ArrayList<ArrayList<CheckersCellView>>();
+		board = new CheckersBoard();
 		
 		boardPanel.setLayout(new GridLayout(8, 8,5,5));
 		boardPanel.setBackground(Color.GRAY);
@@ -66,32 +64,22 @@ public class CheckersBoardPane extends JPanel {
 		boolean start = false;
 		
 		for (int i = 0; i < 8; i++) {
-			cells.add(new ArrayList<CheckersCell>());
+			board.add(new ArrayList<CheckersCell>());
 			for (int j = 0; j < 8; j++) {
 				if (start) {
 					if (i < 3)
-						cells.get(i).add(new CheckersCell(Color.BLACK, settings.isMoveFocusAssist(), new CheckersPiece(settings.getPlayer2Team(), i, j), i, j));
+						board.get(i).add(new CheckersCell(Color.BLACK, settings.isMoveFocusAssist(), new CheckersPiece(settings.getPlayer2Team(), i, j), i, j));
 					else if (i > 4)
-						cells.get(i).add(new CheckersCell(Color.BLACK, settings.isMoveFocusAssist(), new CheckersPiece(settings.getPlayer1Team(), i, j), i, j));
+						board.get(i).add(new CheckersCell(Color.BLACK, settings.isMoveFocusAssist(), new CheckersPiece(settings.getPlayer1Team(), i, j), i, j));
 					else
-						cells.get(i).add(new CheckersCell(Color.BLACK, settings.isMoveFocusAssist(), null, i, j));
+						board.get(i).add(new CheckersCell(Color.BLACK, settings.isMoveFocusAssist(), null, i, j));
 				}
-				else cells.get(i).add(new CheckersCell(Color.WHITE, settings.isMoveFocusAssist(), null, i, j));
+				else board.get(i).add(new CheckersCell(Color.WHITE, settings.isMoveFocusAssist(), null, i, j));
 				start = !start;
+				boardPanel.add(board.get(i).get(j).getView());
 			}
 			start = !start;
 		}
-		
-		for (List<CheckersCell> row : cells) {
-			ArrayList<CheckersCellView> viewRow = new ArrayList<CheckersCellView>();
-			for (CheckersCell cell : row) {
-				CheckersCellView view = new CheckersCellView(cell);
-				viewRow.add(view);
-				boardPanel.add(view);
-			}
-			views.add(viewRow);
-		}
-		
 	}
 	
 	private void initInfoPanel() {
@@ -130,12 +118,8 @@ public class CheckersBoardPane extends JPanel {
 		return undo;
 	}
 	
-	protected List<ArrayList<CheckersCell>> getCheckersCells(){
-		return cells;
-	}
-	
-	protected List<ArrayList<CheckersCellView>> getCheckersCellViews(){
-		return views;
+	protected CheckersBoard getBoard(){
+		return board;
 	}
 	
 }

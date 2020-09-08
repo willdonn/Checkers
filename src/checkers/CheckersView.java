@@ -1,6 +1,5 @@
 package checkers;
 
-import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Toolkit;
 import javax.swing.JFrame;
@@ -14,7 +13,6 @@ import checkers.menu.settings.GameSettingsModel;
 import checkers.menu.settings.GameSettingsPane;
 import checkers.menu.start.StartMenuController;
 import checkers.menu.start.StartMenuPane;
-import checkers.opponent.AI.CheckersAI;
 
 public class CheckersView extends JFrame {
 	
@@ -40,7 +38,6 @@ public class CheckersView extends JFrame {
 	
 	public CheckersView() {
 		super();
-		state = ViewState.START_MENU;
 		setTitle("Checkers");
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		initWindow();
@@ -50,7 +47,7 @@ public class CheckersView extends JFrame {
 	
 	private void initWindow() {
 		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-		int width = (int) Math.round(screenSize.width*0.4);
+		int width = (int) Math.round(screenSize.width*0.5);
 		
 		int centrX = screenSize.width/2-(width/2);
 		int centrY = screenSize.height/2 - (width/2);

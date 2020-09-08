@@ -5,42 +5,45 @@ import java.awt.event.MouseEvent;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import checkers.board.BoardModel;
+import checkers.board.CheckersCell;
 import checkers.board.CheckersCellView;
 
 public class CheckersAI implements Runnable{
 	
 	private BoardModel model;
 	private Color team;
-	 private final AtomicBoolean running = new AtomicBoolean(false);
+	private CheckersMinimax minimax;
+	private final AtomicBoolean running = new AtomicBoolean(false);
 	
 	public CheckersAI(BoardModel model, Color team) {
 		this.model = model;
 		this.team = team;
+		minimax = new CheckersMinimax(model, team, (team == Color.RED) ? Color.BLUE : Color.RED);
 	}
 	
 	private void movePlayerTwo() throws InterruptedException {
 		
 		if (model.getFocusPiece() != null && model.getAvailableMoves().size() != 0) {
 			Thread.sleep(500);
-			CheckersCellView targetCellView = model.getCellView(model.getAvailableMoves().get(0));
-			MouseEvent me2 = new MouseEvent(targetCellView, 0, 0, 0, 100, 100, 1, false);
-			targetCellView.getMouseListeners()[0].mousePressed(me2);
+			CheckersCell targetCell = model.getAvailableMoves().get(0);
+			MouseEvent me2 = new MouseEvent(targetCell.getView(), 0, 0, 0, 100, 100, 1, false);
+			targetCell.getView().getMouseListeners()[0].mousePressed(me2);
 			return;
 		}
 
 		for (int i = 0; i < model.getBoard().size(); i++) {
-			for (CheckersCellView cellView : model.getBoardView().get(i)) {
-				if (cellView.getModel().getPiece() == null || cellView.getModel().getPiece().getColor() != team) continue;
-				model.setFocus(cellView.getModel());
+			for (CheckersCell cell : model.getBoard().get(i)) {
+				if (cell.getPiece() == null || cell.getPiece().getColor() != team) continue;
+				model.setFocus(cell);
 				model.refreshAvailableMoves();
 				if (model.getAvailableMoves().size() != 0) {
 					model.clearFocus();
-					MouseEvent me = new MouseEvent(cellView, 0, 0, 0, 100, 100, 1, false);
-					cellView.getMouseListeners()[0].mousePressed(me);
+					MouseEvent me = new MouseEvent(cell.getView(), 0, 0, 0, 100, 100, 1, false);
+					cell.getView().getMouseListeners()[0].mousePressed(me);
 					Thread.sleep(500);
-					CheckersCellView targetCellView = model.getCellView(model.getAvailableMoves().get(0));
-					MouseEvent me2 = new MouseEvent(targetCellView, 0, 0, 0, 100, 100, 1, false);
-					targetCellView.getMouseListeners()[0].mousePressed(me2);
+					CheckersCell targetCell = model.getAvailableMoves().get(0);
+					MouseEvent me2 = new MouseEvent(targetCell.getView(), 0, 0, 0, 100, 100, 1, false);
+					targetCell.getView().getMouseListeners()[0].mousePressed(me2);
 					return;
 				}
 			}

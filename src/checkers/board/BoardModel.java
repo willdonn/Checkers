@@ -9,24 +9,21 @@ import checkers.menu.settings.GameSettingsModel;
 
 public class BoardModel {
 
-	private List<ArrayList<CheckersCell>> board;
+	private CheckersBoard board;
 	private Stack<List<ArrayList<CheckersPiece>>> moveStack;
-	private List<ArrayList<CheckersCellView>> view;
 	private GameSettingsModel settings;
 	private List<CheckersCell> availableMoves;
-	private List<CheckersCell> availablePieces;
+	private List<CheckersPiece> availablePieces;
 	private CheckersPiece focusPiece;
 	
 	private Color turn;
 	private boolean switchFocus = true;
 	
-	
-	public BoardModel(List<ArrayList<CheckersCell>> board, List<ArrayList<CheckersCellView>> view, GameSettingsModel settings) {
+	public BoardModel(CheckersBoard board, GameSettingsModel settings) {
 		this.board = board;
-		this.view = view;
 		this.settings = settings;
 		this.availableMoves = new ArrayList<CheckersCell>();
-		this.availablePieces = new ArrayList<CheckersCell>();
+		this.availablePieces = new ArrayList<CheckersPiece>();
 		this.moveStack = new Stack<List<ArrayList<CheckersPiece>>>();
 		turn = settings.getPlayer1Team();
 	}
@@ -45,10 +42,6 @@ public class BoardModel {
 	public CheckersCell getPieceCell(CheckersPiece piece) {
 		return getCellAt(piece.x, piece.y);
 	}
-
-	public synchronized CheckersCellView getCellView(CheckersCell cell) {
-		return view.get(cell.x).get(cell.y);
-	}
 	
 	public CheckersPiece getFocusPiece() {
 		return focusPiece;
@@ -58,12 +51,8 @@ public class BoardModel {
 		return turn;
 	}
 	
-	public synchronized List<ArrayList<CheckersCell>> getBoard(){
+	public synchronized CheckersBoard getBoard(){
 		return board;
-	}
-	
-	public synchronized List<ArrayList<CheckersCellView>> getBoardView(){
-		return view;
 	}
 	
 	public synchronized List<CheckersCell> getAvailableMoves(){
@@ -93,8 +82,8 @@ public class BoardModel {
 	}
 	
 	public void addAvailablePiece(int x, int y) {
-		board.get(x).get(y).getPiece().available = true;
-		availablePieces.add(board.get(x).get(y));
+		board.get(x).get(y).getPiece().setAvailablePiece(true);
+		availablePieces.add(board.get(x).get(y).getPiece());
 	}
 	
 	private void resetAvailableMoves() {
@@ -105,7 +94,7 @@ public class BoardModel {
 	}
 	
 	private void resetAvailablePieces() {
-		for (CheckersCell c : availablePieces) {
+		for (CheckersPiece c : availablePieces) {
 			c.setAvailablePiece(false);
 		}
 		availablePieces.clear();
@@ -127,6 +116,8 @@ public class BoardModel {
 	}
 	
 	public synchronized void refreshAvailableMoves() {
+		if (!switchFocus) return;
+		
 		resetAvailableMoves();
 		
 		if (focusPiece == null) return;
@@ -212,7 +203,7 @@ public class BoardModel {
 	public void setFocus(CheckersCell cell) {
 		clearFocus();
 		
-		cell.setPieceFocus(true);
+		cell.getPiece().setPieceFocus(true);
 		focusPiece = cell.getPiece();
 	}
 	
@@ -267,7 +258,7 @@ public class BoardModel {
 			ArrayList<CheckersPiece> row = new ArrayList<CheckersPiece>();
 			for (int j = 0; j < 8; j++) {
 				CheckersCell cell = board.get(i).get(j);
-				row.add(cell.getPiece() != null ? new CheckersPiece(cell.getPiece().color, cell.getPiece().x, cell.getPiece().y) : null);
+				row.add(cell.getPiece() != null ? cell.getPiece().clone() : null);
 			}
 			save.add(row);
 		}
@@ -278,10 +269,13 @@ public class BoardModel {
 	public void undo() {
 		List<ArrayList<CheckersPiece>> save = moveStack.pop();
 		for (int i = 0; i < 8; i++) {
-			for (int j = 0; j < 7; j++) {
+			for (int j = 0; j < 8; j++) {
+				CheckersCell cell = board.get(i).get(j);
 				board.get(i).get(j).setPiece(save.get(i).get(j));
+				cell.setCellFocus(false);
 			}
 		}
+		clearFocus();
 		resetAvailableMoves();
 	}
 	
